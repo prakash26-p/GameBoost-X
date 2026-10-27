@@ -7,59 +7,114 @@ on:
     branches: [ main, master ]
   workflow_dispatch:
 
-permissions:
-  contents: write
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build-apk:
     name: Build & Package Android Debug APK
     runs-on: ubuntu-latest
+    timeout-minutes: 25
 
     steps:
-      - name: Checkout repository
+      - name: 1. Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Node.js 20
+      - name: 2. Validate Project Structure
+        run: |
+          echo "🔍 Checking repository files and directories..."
+          if [ ! -f "package.json" ]; then
+            echo "❌ Error: package.json missing in repository root!"
+            exit 1
+          fi
+          if [ ! -f "package-lock.json" ]; then
+            echo "❌ Error: package-lock.json missing in repository root!"
+            exit 1
+          fi
+          if [ ! -d "android" ]; then
+            echo "❌ Error: /android directory missing!"
+            exit 1
+          fi
+          if [ ! -f "android/gradlew" ]; then
+            echo "❌ Error: android/gradlew script missing!"
+            exit 1
+          fi
+          echo "✅ Project structure validated."
+
+      - name: 3. Set up Node.js 20
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: 'npm'
+          cache-dependency-path: 'package-lock.json'
 
-      - name: Install Node dependencies
-        run: npm ci || npm install
+      - name: 4. Install Node Dependencies
+        run: |
+          echo "📦 Installing Node dependencies using npm ci..."
+          npm ci
 
-      - name: Build Web Application & Sync Android Assets
-        run: npm run build:android
+      - name: 5. Build Web Application & Sync Android Assets
+        run: |
+          echo "⚡ Building Vite web application..."
+          npm run build
+          echo "📂 Syncing web distribution into android assets..."
+          mkdir -p android/app/src/main/assets/dist
+          rm -rf android/app/src/main/assets/dist/*
+          cp -r dist/* android/app/src/main/assets/dist/
+          if [ ! -f "android/app/src/main/assets/dist/index.html" ]; then
+            echo "❌ Error: Failed to bundle index.html into Android assets!"
+            exit 1
+          fi
+          echo "✅ Web assets successfully bundled into Android assets directory."
 
-      - name: Set up JDK 17
+      - name: 6. Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
+          cache: 'gradle'
 
-      - name: Setup Android SDK
+      - name: 7. Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Make Gradle wrapper executable
-        run: chmod +x android/gradlew
+      - name: 8. Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-home-cache-cleanup: true
 
-      - name: Build Debug APK with Gradle
+      - name: 9. Build Debug APK with Gradle
         working-directory: android
-        run: ./gradlew assembleDebug --stacktrace
-
-      - name: Verify APK Generated
         run: |
-          if [ -f "android/app/build/outputs/apk/debug/app-debug.apk" ]; then
-            echo "✅ Successfully built app-debug.apk"
-            ls -lh android/app/build/outputs/apk/debug/app-debug.apk
-          else
-            echo "❌ APK build output not found!"
+          chmod +x gradlew
+          echo "🚀 Running Gradle assembleDebug..."
+          ./gradlew assembleDebug --stacktrace --no-daemon
+
+      - name: 10. Strict Verification of Generated APK
+        run: |
+          APK_PATH="android/app/build/outputs/apk/debug/app-debug.apk"
+          if [ ! -f "$APK_PATH" ]; then
+            echo "❌ Build Error: Expected APK file not found at $APK_PATH"
+            exit 1
+          fi
+          
+          # Check that APK is not empty or dummy
+          APK_SIZE=$(stat -c%s "$APK_PATH" 2>/dev/null || stat -f%z "$APK_PATH" 2>/dev/null || wc -c < "$APK_PATH")
+          if [ "$APK_SIZE" -lt 100000 ]; then
+            echo "❌ Build Error: APK file is unexpectedly small ($APK_SIZE bytes). Likely corrupted or placeholder."
             exit 1
           fi
 
-      - name: Upload Debug APK Artifact
+          echo "=========================================================="
+          echo "🎉 SUCCESS: GameBoost X Debug APK successfully generated!"
+          echo "APK Location: $APK_PATH"
+          echo "File Size: $(ls -lh $APK_PATH | awk '{print $5}')"
+          echo "=========================================================="
+
+      - name: 11. Upload Debug APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: gameboost-x-debug-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
           retention-days: 30
