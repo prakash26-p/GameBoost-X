@@ -1,0 +1,6 @@
+{
+  "name": "GameBoost X — Smart Gaming Performance",
+  "description": "GameBoost X helps you organize your games, inspect available device information, monitor network quality, and access supported gaming utilities from one convenient dashboard.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
