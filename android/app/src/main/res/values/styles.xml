@@ -1,0 +1,7 @@
+<resources>
+    <style name="Theme.GameBoostX" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <item name="android:statusBarColor">@color/primary_black</item>
+        <item name="android:navigationBarColor">@color/primary_black</item>
+        <item name="android:windowBackground">@color/primary_black</item>
+    </style>
+</resources>

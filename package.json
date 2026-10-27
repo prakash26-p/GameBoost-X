@@ -7,6 +7,7 @@
     "dev": "tsx server.ts",
     "start": "tsx server.ts",
     "build": "vite build",
+    "build:android": "vite build && mkdir -p android/app/src/main/assets/dist && rm -rf android/app/src/main/assets/dist/* && cp -r dist/* android/app/src/main/assets/dist/",
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit"
