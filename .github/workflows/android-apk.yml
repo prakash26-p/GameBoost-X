@@ -100,12 +100,18 @@ jobs:
         with:
           gradle-home-cache-cleanup: true
 
-      - name: 10. Build Debug APK with Gradle
+      - name: 10. Run Gradle Diagnostics & Assemble Debug APK
         working-directory: android
         run: |
           chmod +x gradlew
-          echo "🚀 Running Gradle assembleDebug with full stacktrace..."
-          ./gradlew assembleDebug --stacktrace --no-daemon
+          echo "🔍 Gradle Environment Diagnostics:"
+          ./gradlew --version
+          
+          echo "🔍 Listing Project Tasks..."
+          ./gradlew tasks --no-daemon || true
+          
+          echo "🚀 Executing assembleDebug with full stacktrace and diagnostic info..."
+          ./gradlew assembleDebug --stacktrace --info --no-daemon
 
       - name: 11. Strict Verification of Generated APK
         run: |

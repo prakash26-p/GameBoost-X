@@ -20,10 +20,19 @@ android {
         }
     }
 
+    signingConfigs {
+        getByName("debug") {
+            // Standard Android debug keystore
+        }
+    }
+
     buildTypes {
+        debug {
+            isDebuggable = true
+            signingConfig = signingConfigs.getByName("debug")
+        }
         release {
-            isMinifyEnabled = true
-            isShrinkResources = true
+            isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -36,31 +45,27 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
+}
 
-    kotlinOptions {
-        jvmTarget = "17"
-    }
-
-    buildFeatures {
-        viewBinding = true
-    }
+kotlin {
+    jvmToolchain(17)
 }
 
 dependencies {
-    implementation("androidx.core:core-ktx:1.15.0")
-    implementation("androidx.appcompat:appcompat:1.7.0")
-    implementation("com.google.android.material:material:1.12.0")
-    implementation("androidx.activity:activity-ktx:1.9.3")
-    implementation("androidx.webkit:webkit:1.12.1")
-    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.appcompat)
+    implementation(libs.material)
+    implementation(libs.androidx.activity.ktx)
+    implementation(libs.androidx.webkit)
+    implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.kotlinx.coroutines.android)
 
     // Official Unity LevelPlay Mediation SDK
-    implementation("com.ironsource.sdk:mediationsdk:8.6.0")
-    implementation("com.google.android.gms:play-services-appset:16.1.0")
-    implementation("com.google.android.gms:play-services-ads-identifier:18.2.0")
-    implementation("com.google.android.gms:play-services-basement:18.5.0")
+    implementation(libs.ironsource.mediationsdk)
+    implementation(libs.play.services.appset)
+    implementation(libs.play.services.ads.identifier)
+    implementation(libs.play.services.basement)
 
     // Official Google Play Billing Library
-    implementation("com.android.billingclient:billing-ktx:7.1.1")
+    implementation(libs.billing.ktx)
 }
